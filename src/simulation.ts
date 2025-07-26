@@ -67,8 +67,32 @@ export default class SatelliteSimulation {
   }
 
   resetSatellite() {
-    this.physicsEngine.reset();
-    this.sceneSetup.updateTrail();
+    // Update the currently followed satellite's position using the UI fields
+    const idx = this.cameraController.followSatelliteIndex;
+    const satellites = this.sceneSetup.satellites;
+    const states = this.physicsEngine.satellites;
+    if (satellites[idx] && states[idx]) {
+      const x = parseFloat((document.getElementById("posX") as HTMLInputElement).value);
+      const y = parseFloat((document.getElementById("posY") as HTMLInputElement).value);
+      const z = parseFloat((document.getElementById("posZ") as HTMLInputElement).value);
+      const velocityMag = parseFloat((document.getElementById("velocity") as HTMLInputElement).value);
+      const directionDeg = parseFloat((document.getElementById("direction") as HTMLInputElement).value);
+      const mass = parseFloat((document.getElementById("mass") as HTMLInputElement).value);
+      const directionRad = directionDeg * Math.PI / 180;
+      // Update physics state
+      states[idx].position.set(x, y, z);
+      states[idx].velocity.set(
+        velocityMag * Math.cos(directionRad),
+        velocityMag * Math.sin(directionRad),
+        0
+      );
+      states[idx].mass = mass;
+      // Update mesh position
+      satellites[idx].position.copy(states[idx].position.clone().multiplyScalar(this.SCALE_FACTOR));
+      // Reset trail
+      this.sceneSetup.trails[idx] = [];
+      this.sceneSetup.updateTrails();
+    }
   }
 
   toggleSimulation() {

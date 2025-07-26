@@ -12,6 +12,9 @@ export default class CameraController {
   orbitPhi: number = Math.PI / 4; // Polar angle
   orbitTheta: number = 0; // Azimuthal angle
 
+  // Satellite follow state
+  followSatelliteIndex: number = 0;
+
   // Free camera state
   freeCameraPosition: THREE.Vector3;
   freeCameraRotation: { x: number; y: number };
@@ -179,10 +182,15 @@ export default class CameraController {
         break;
 
       case "follow":
-        const satPos = this.simulation.sceneSetup.satellite.position.clone();
-        const cameraPos = satPos.clone().add(new THREE.Vector3(0, 0, 100));
-        this.simulation.camera.position.copy(cameraPos);
-        this.simulation.camera.lookAt(satPos);
+        // Follow the selected satellite (default: first)
+        const satellites = this.simulation.sceneSetup.satellites;
+        const idx = Math.min(this.followSatelliteIndex, satellites.length - 1);
+        if (satellites.length > 0 && satellites[idx]) {
+          const satPos = satellites[idx].position.clone();
+          const cameraPos = satPos.clone().add(new THREE.Vector3(0, 0, 100));
+          this.simulation.camera.position.copy(cameraPos);
+          this.simulation.camera.lookAt(satPos);
+        }
         break;
     }
 

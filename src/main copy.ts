@@ -9,7 +9,7 @@ window.addEventListener("DOMContentLoaded", () => {
       window.simulation.renderer.setSize(window.innerWidth, window.innerHeight);
     }
   });
-
+  
   // Start simulation
   window.simulation = new SatelliteSimulation();
 });

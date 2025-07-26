@@ -16,6 +16,19 @@
 
       <div id="controls">
         <h3>Simulation Controls</h3>
+        <div id="satellite-controls">
+          <h4>Satellites</h4>
+          <div>
+            <label>Position (meters):</label>
+            <input type="number" id="posX" value="6771000" style="width:80px;" /> X
+            <input type="number" id="posY" value="0" style="width:80px;" /> Y
+            <input type="number" id="posZ" value="0" style="width:80px;" /> Z
+          </div>
+          <div id="satellite-list"></div>
+          <button id="addSatelliteBtn">Add Satellite</button>
+          <label for="followSelect">Follow Satellite:</label>
+          <select id="followSelect"></select>
+        </div>
 
         <div class="control-group">
           <label>Simulation Speed</label>

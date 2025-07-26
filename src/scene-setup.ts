@@ -11,15 +11,14 @@ export default class SceneSetup {
 
   // earth: THREE.Mesh;
   // satellite: THREE.Mesh;
-  trailLine: THREE.Line;
+  // trailLine: THREE.Line;
 
   earth: THREE.Group;
   textureLoader: THREE.TextureLoader;
 
-  satellite: THREE.Group;
-
-  trailGeometry: THREE.BufferGeometry;
-  trail: THREE.Vector3[] = [];
+  satellites: THREE.Group[] = [];
+  trails: THREE.Vector3[][] = [];
+  trailLines: THREE.Line[] = [];
   maxTrailLength: number = 1000;
   sunLight!: THREE.DirectionalLight;
   nightLight!: THREE.AmbientLight;
@@ -48,19 +47,8 @@ export default class SceneSetup {
     this.scene.add(this.earth);
     this.textureLoader = new THREE.TextureLoader();
 
-    // Create satellite
-    this.satellite = new THREE.Group();
-    this.loadSatelliteModel();
-
-    // Create trail
-    this.trailGeometry = new THREE.BufferGeometry();
-    const trailMaterial = new THREE.LineBasicMaterial({
-      color: 0xff6b35,
-      transparent: true,
-      opacity: 0.8,
-    });
-    this.trailLine = new THREE.Line(this.trailGeometry, trailMaterial);
-    this.scene.add(this.trailLine);
+    // Remove default satellites. Do not add any satellites in the constructor.
+    // Satellites will be added via the UI only.
 
     // Add stars in the background
     this.addStars(2000);
@@ -73,24 +61,39 @@ export default class SceneSetup {
     this.camera.lookAt(0, 0, 0);
   }
 
-  async loadSatelliteModel() {
-    const loader = new GLTFLoader();
+  async addSatellite(options?: { position?: THREE.Vector3; velocity?: THREE.Vector3; mass?: number }) {
+    // Create satellite group
+    const satellite = new THREE.Group();
     try {
+      const loader = new GLTFLoader();
       const satData = await loader.loadAsync(
         "../assets/models/Satellite/Satellite.gltf"
       );
       const satModel = satData.scene;
-
-      // Scale satellite model appropriately
       satModel.scale.set(0.01, 0.01, 0.01);
-
-      this.satellite.add(satModel);
-      this.scene.add(this.satellite);
+      satellite.add(satModel);
     } catch (error) {
-      console.error("Failed to load satellite model:", error);
-      // Fallback to primitive sphere
-      this.satellite = this.createSatellite();
+      // Fallback to primitive
+      const fallback = this.createSatellite();
+      satellite.add(fallback);
     }
+    this.scene.add(satellite);
+    this.satellites.push(satellite);
+    // Create trail for this satellite
+    const trail: THREE.Vector3[] = [];
+    this.trails.push(trail);
+    // Create trail line
+    const trailGeometry = new THREE.BufferGeometry();
+    const trailMaterial = new THREE.LineBasicMaterial({
+      color: 0xff6b35,
+      transparent: true,
+      opacity: 0.8,
+    });
+    const trailLine = new THREE.Line(trailGeometry, trailMaterial);
+    this.scene.add(trailLine);
+    this.trailLines.push(trailLine);
+    // Register initial state in physics engine
+    this.simulation.physicsEngine.addSatelliteState(options);
   }
 
   createEarth(): THREE.Group {
@@ -199,36 +202,43 @@ export default class SceneSetup {
     this.scene.add(this.nightLight);
   }
 
-  updateTrail() {
-    if (this.trail.length > 1) {
-      const points = this.trail.map((pos) =>
-        pos.clone().multiplyScalar(this.simulation.SCALE_FACTOR)
-      );
-      this.trailGeometry = new THREE.BufferGeometry();
-      this.trailGeometry.setFromPoints(points);
-      this.trailLine.geometry = this.trailGeometry;
+  updateTrails() {
+    for (let i = 0; i < this.trails.length; i++) {
+      const trail = this.trails[i];
+      if (trail.length > 1) {
+        const points = trail.map((pos) =>
+          pos.clone().multiplyScalar(this.simulation.SCALE_FACTOR)
+        );
+        const trailGeometry = new THREE.BufferGeometry();
+        trailGeometry.setFromPoints(points);
+        this.trailLines[i].geometry = trailGeometry;
+      }
     }
   }
 
   updateInfo() {
-    const distance = this.simulation.physicsEngine.position.length();
-    const altitude = (distance - this.simulation.EARTH_RADIUS) / 1000; // km
-    const speed = this.simulation.physicsEngine.velocity.length(); // m/s
-    const distanceFromEarth = distance / 1000; // km
+    // Show info for the first satellite (or extend for all)
+    if (this.simulation.physicsEngine.satellites.length > 0) {
+      const sat = this.simulation.physicsEngine.satellites[0];
+      const distance = sat.position.length();
+      const altitude = (distance - this.simulation.EARTH_RADIUS) / 1000; // km
+      const speed = sat.velocity.length(); // m/s
+      const distanceFromEarth = distance / 1000; // km
 
-    const altitudeElement = document.getElementById("currentAltitude");
-    if (altitudeElement) {
-      altitudeElement.textContent = `${altitude.toFixed(1)} km`;
-    }
+      const altitudeElement = document.getElementById("currentAltitude");
+      if (altitudeElement) {
+        altitudeElement.textContent = `${altitude.toFixed(1)} km`;
+      }
 
-    const speedElement = document.getElementById("currentSpeed");
-    if (speedElement) {
-      speedElement.textContent = `${speed.toFixed(0)} m/s`;
-    }
+      const speedElement = document.getElementById("currentSpeed");
+      if (speedElement) {
+        speedElement.textContent = `${speed.toFixed(0)} m/s`;
+      }
 
-    const distanceElement = document.getElementById("currentDistance");
-    if (distanceElement) {
-      distanceElement.textContent = `${distanceFromEarth.toFixed(1)} km`;
+      const distanceElement = document.getElementById("currentDistance");
+      if (distanceElement) {
+        distanceElement.textContent = `${distanceFromEarth.toFixed(1)} km`;
+      }
     }
   }
 }

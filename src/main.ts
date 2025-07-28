@@ -52,30 +52,13 @@ window.addEventListener("DOMContentLoaded", () => {
     followSelect.value = sim.cameraController.followSatelliteIndex.toString();
   }
 
-  // Sync Satellite Height input to position fields
-  function syncHeightToPosition() {
-    const heightInput = document.getElementById("height") as HTMLInputElement;
-    const heightValInput = document.getElementById("heightVal") as HTMLInputElement;
-    const posX = document.getElementById("posX") as HTMLInputElement;
-    const posY = document.getElementById("posY") as HTMLInputElement;
-    const posZ = document.getElementById("posZ") as HTMLInputElement;
-    if (!heightInput || !heightValInput || !posX || !posY || !posZ) return;
-    // Get height in meters
-    const height = parseFloat(heightInput.value) * 1000;
-    // Use Earth's radius from simulation
-    const earthRadius = window.simulation.EARTH_RADIUS;
-    posX.value = (earthRadius + height).toString();
-    posY.value = "0";
-    posZ.value = "0";
-  }
-
-  document.getElementById("height")?.addEventListener("input", syncHeightToPosition);
-  document.getElementById("heightVal")?.addEventListener("input", syncHeightToPosition);
-
   document.getElementById("addSatelliteBtn")?.addEventListener("click", async () => {
-    const x = parseFloat((document.getElementById("posX") as HTMLInputElement).value);
-    const y = parseFloat((document.getElementById("posY") as HTMLInputElement).value);
-    const z = parseFloat((document.getElementById("posZ") as HTMLInputElement).value);
+    const heightInput = document.getElementById("height") as HTMLInputElement;
+    const earthRadius = window.simulation.EARTH_RADIUS;
+    const height = parseFloat(heightInput.value) * 1000; // km to m
+    const x = earthRadius + height;
+    const y = 0;
+    const z = 0;
     const velocityMag = parseFloat((document.getElementById("velocity") as HTMLInputElement).value);
     const directionDeg = parseFloat((document.getElementById("direction") as HTMLInputElement).value);
     const mass = parseFloat((document.getElementById("mass") as HTMLInputElement).value);

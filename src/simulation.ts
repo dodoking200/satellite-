@@ -72,9 +72,12 @@ export default class SatelliteSimulation {
     const satellites = this.sceneSetup.satellites;
     const states = this.physicsEngine.satellites;
     if (satellites[idx] && states[idx]) {
-      const x = parseFloat((document.getElementById("posX") as HTMLInputElement).value);
-      const y = parseFloat((document.getElementById("posY") as HTMLInputElement).value);
-      const z = parseFloat((document.getElementById("posZ") as HTMLInputElement).value);
+      const heightInput = document.getElementById("height") as HTMLInputElement;
+      const earthRadius = this.EARTH_RADIUS;
+      const height = parseFloat(heightInput.value) * 1000; // km to m
+      const x = earthRadius + height;
+      const y = 0;
+      const z = 0;
       const velocityMag = parseFloat((document.getElementById("velocity") as HTMLInputElement).value);
       const directionDeg = parseFloat((document.getElementById("direction") as HTMLInputElement).value);
       const mass = parseFloat((document.getElementById("mass") as HTMLInputElement).value);

@@ -61,7 +61,7 @@ export default class SceneSetup {
     this.camera.lookAt(0, 0, 0);
   }
 
-  async addSatellite(options?: { position?: THREE.Vector3; velocity?: THREE.Vector3; mass?: number }) {
+  async addSatellite(options?: { position?: THREE.Vector3; velocity?: THREE.Vector3; mass?: number; dragCoefficient?: number; area?: number }) {
     // Create satellite group
     const satellite = new THREE.Group();
     try {
@@ -238,6 +238,94 @@ export default class SceneSetup {
       const distanceElement = document.getElementById("currentDistance");
       if (distanceElement) {
         distanceElement.textContent = `${distanceFromEarth.toFixed(1)} km`;
+      }
+
+      // Add drag force information
+      const dragCoeffElement = document.getElementById("currentDragCoeff");
+      if (dragCoeffElement) {
+        dragCoeffElement.textContent = `${sat.dragCoefficient ?? 2.2}`;
+      }
+
+      const areaElement = document.getElementById("currentArea");
+      if (areaElement) {
+        areaElement.textContent = `${sat.area ?? 4} m²`;
+      }
+
+      const airEnabledElement = document.getElementById("currentAirEnabled");
+      if (airEnabledElement) {
+        airEnabledElement.textContent = sat.airEnabled ? "Enabled" : "Disabled";
+      }
+
+      // Calculate and display current atmospheric density
+      const densityElement = document.getElementById("currentDensity");
+      if (densityElement) {
+        const h = Math.max(0, altitude * 1000); // Convert back to meters
+        let rho = 0;
+        
+        if (h < 11000) { // Troposphere (0-11km)
+          rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
+        } else if (h < 20000) { // Lower stratosphere (11-20km)
+          rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
+        } else if (h < 32000) { // Upper stratosphere (20-32km)
+          rho = 0.0880 * Math.exp(-(h - 20000) / 7360.0);
+        } else if (h < 47000) { // Lower mesosphere (32-47km)
+          rho = 0.0132 * Math.exp(-(h - 32000) / 8000.0);
+        } else if (h < 51000) { // Upper mesosphere (47-51km)
+          rho = 0.00143 * Math.exp(-(h - 47000) / 7500.0);
+        } else if (h < 71000) { // Lower thermosphere (51-71km)
+          rho = 0.000086 * Math.exp(-(h - 51000) / 10000.0);
+        } else if (h < 100000) { // Upper thermosphere (71-100km)
+          rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
+        } else if (h < 200000) { // Low Earth Orbit (100-200km)
+          rho = 0.0000001 * Math.exp(-(h - 100000) / 25000.0);
+        } else if (h < 500000) { // Medium Earth Orbit (200-500km)
+          rho = 0.00000001 * Math.exp(-(h - 200000) / 100000.0);
+        } else { // High Earth Orbit (500km+)
+          rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
+        }
+        
+        densityElement.textContent = `${rho.toExponential(3)} kg/m³`;
+      }
+
+      // Calculate and display current drag force
+      const dragForceElement = document.getElementById("currentDragForce");
+      if (dragForceElement && sat.airEnabled) {
+        const h = Math.max(0, altitude * 1000);
+        let rho = 0;
+        
+        if (h < 11000) {
+          rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
+        } else if (h < 20000) {
+          rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
+        } else if (h < 32000) {
+          rho = 0.0880 * Math.exp(-(h - 20000) / 7360.0);
+        } else if (h < 47000) {
+          rho = 0.0132 * Math.exp(-(h - 32000) / 8000.0);
+        } else if (h < 51000) {
+          rho = 0.00143 * Math.exp(-(h - 47000) / 7500.0);
+        } else if (h < 71000) {
+          rho = 0.000086 * Math.exp(-(h - 51000) / 10000.0);
+        } else if (h < 100000) {
+          rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
+        } else if (h < 200000) {
+          rho = 0.0000001 * Math.exp(-(h - 100000) / 25000.0);
+        } else if (h < 500000) {
+          rho = 0.00000001 * Math.exp(-(h - 200000) / 100000.0);
+        } else {
+          rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
+        }
+        
+        const Cd = sat.dragCoefficient ?? 2.2;
+        const A = sat.area ?? 4;
+        const dragMagnitude = 0.5 * rho * speed * speed * Cd * A;
+        
+        if (dragMagnitude > 0.001) { // Only show if drag is significant
+          dragForceElement.textContent = `${(dragMagnitude/1000).toFixed(3)} kN`;
+        } else {
+          dragForceElement.textContent = `${(dragMagnitude).toExponential(2)} N`;
+        }
+      } else if (dragForceElement) {
+        dragForceElement.textContent = "0 N";
       }
     }
   }

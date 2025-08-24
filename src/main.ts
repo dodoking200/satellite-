@@ -52,6 +52,57 @@ window.addEventListener("DOMContentLoaded", () => {
     followSelect.value = sim.cameraController.followSatelliteIndex.toString();
   }
 
+  // --- Control synchronization functions ---
+  function syncDragCoeffControls() {
+    const rangeInput = document.getElementById("dragCoeff") as HTMLInputElement;
+    const numberInput = document.getElementById("dragCoeffVal") as HTMLInputElement;
+    if (rangeInput && numberInput) {
+      rangeInput.value = numberInput.value;
+    }
+  }
+
+  function syncAreaControls() {
+    const rangeInput = document.getElementById("area") as HTMLInputElement;
+    const numberInput = document.getElementById("areaVal") as HTMLInputElement;
+    if (rangeInput && numberInput) {
+      rangeInput.value = numberInput.value;
+    }
+  }
+
+  function updateCurrentSatelliteDragProperties() {
+    const sim = window.simulation;
+    const currentIdx = sim.cameraController.followSatelliteIndex;
+    if (sim.physicsEngine.satellites[currentIdx]) {
+      const dragCoeff = parseFloat((document.getElementById("dragCoeff") as HTMLInputElement).value);
+      const area = parseFloat((document.getElementById("area") as HTMLInputElement).value);
+      
+      sim.physicsEngine.satellites[currentIdx].dragCoefficient = dragCoeff;
+      sim.physicsEngine.satellites[currentIdx].area = area;
+    }
+  }
+
+  function updateDragControlsFromCurrentSatellite() {
+    const sim = window.simulation;
+    const currentIdx = sim.cameraController.followSatelliteIndex;
+    if (sim.physicsEngine.satellites[currentIdx]) {
+      const sat = sim.physicsEngine.satellites[currentIdx];
+      const dragCoeffInput = document.getElementById("dragCoeff") as HTMLInputElement;
+      const dragCoeffValInput = document.getElementById("dragCoeffVal") as HTMLInputElement;
+      const areaInput = document.getElementById("area") as HTMLInputElement;
+      const areaValInput = document.getElementById("areaVal") as HTMLInputElement;
+      
+      if (dragCoeffInput && dragCoeffValInput) {
+        dragCoeffInput.value = (sat.dragCoefficient ?? 2.2).toString();
+        dragCoeffValInput.value = (sat.dragCoefficient ?? 2.2).toString();
+      }
+      
+      if (areaInput && areaValInput) {
+        areaInput.value = (sat.area ?? 4.0).toString();
+        areaValInput.value = (sat.area ?? 4.0).toString();
+      }
+    }
+  }
+
   document.getElementById("addSatelliteBtn")?.addEventListener("click", async () => {
     const heightInput = document.getElementById("height") as HTMLInputElement;
     const earthRadius = window.simulation.EARTH_RADIUS;
@@ -62,6 +113,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const velocityMag = parseFloat((document.getElementById("velocity") as HTMLInputElement).value);
     const directionDeg = parseFloat((document.getElementById("direction") as HTMLInputElement).value);
     const mass = parseFloat((document.getElementById("mass") as HTMLInputElement).value);
+    const dragCoeff = parseFloat((document.getElementById("dragCoeff") as HTMLInputElement).value);
+    const area = parseFloat((document.getElementById("area") as HTMLInputElement).value);
     const directionRad = directionDeg * Math.PI / 180;
     const velocity = new THREE.Vector3(
       velocityMag * Math.cos(directionRad),
@@ -71,7 +124,9 @@ window.addEventListener("DOMContentLoaded", () => {
     await window.simulation.sceneSetup.addSatellite({
       position: new THREE.Vector3(x, y, z),
       velocity,
-      mass
+      mass,
+      dragCoefficient: dragCoeff,
+      area: area
     });
     updateSatelliteUI();
   });
@@ -79,8 +134,38 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("followSelect")?.addEventListener("change", (e) => {
     const idx = parseInt((e.target as HTMLSelectElement).value, 10);
     window.simulation.cameraController.followSatelliteIndex = idx;
+    updateDragControlsFromCurrentSatellite();
+  });
+
+  // --- Drag Coefficient Controls ---
+  document.getElementById("dragCoeff")?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    (document.getElementById("dragCoeffVal") as HTMLInputElement).value = value;
+    updateCurrentSatelliteDragProperties();
+  });
+
+  document.getElementById("dragCoeffVal")?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    (document.getElementById("dragCoeff") as HTMLInputElement).value = value;
+    updateCurrentSatelliteDragProperties();
+  });
+
+  // --- Area Controls ---
+  document.getElementById("area")?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    (document.getElementById("areaVal") as HTMLInputElement).value = value;
+    updateCurrentSatelliteDragProperties();
+  });
+
+  document.getElementById("areaVal")?.addEventListener("input", (e) => {
+    const value = (e.target as HTMLInputElement).value;
+    (document.getElementById("area") as HTMLInputElement).value = value;
+    updateCurrentSatelliteDragProperties();
   });
 
   // Initial UI update after satellites are created
-  setTimeout(updateSatelliteUI, 500);
+  setTimeout(() => {
+    updateSatelliteUI();
+    updateDragControlsFromCurrentSatellite();
+  }, 500);
 });

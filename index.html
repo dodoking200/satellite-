@@ -135,6 +135,50 @@
         </div>
 
         <div class="control-group">
+          <label>Drag Coefficient</label>
+          <div class="control-row">
+            <input
+              type="range"
+              id="dragCoeff"
+              min="0.1"
+              max="5.0"
+              step="0.1"
+              value="2.2"
+            />
+            <input
+              type="number"
+              id="dragCoeffVal"
+              min="0.1"
+              max="5.0"
+              step="0.1"
+              value="2.2"
+            />
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>Cross-Section Area (m²)</label>
+          <div class="control-row">
+            <input
+              type="range"
+              id="area"
+              min="0.1"
+              max="20.0"
+              step="0.1"
+              value="4.0"
+            />
+            <input
+              type="number"
+              id="areaVal"
+              min="0.1"
+              max="20.0"
+              step="0.1"
+              value="4.0"
+            />
+          </div>
+        </div>
+
+        <div class="control-group">
           <label>Preset Scenarios</label>
           <div class="scenarios">
             <button class="scenario-btn crash" id="crashScenario">Crash</button>
@@ -180,6 +224,28 @@
         <div class="info-item">
           <span class="info-label">Camera Mode:</span>
           <span class="info-value" id="cameraMode">Orbit</span>
+        </div>
+        
+        <!-- Drag Force Information -->
+        <div class="info-item">
+          <span class="info-label">Drag Coefficient:</span>
+          <span class="info-value" id="currentDragCoeff">2.2</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Cross-Section Area:</span>
+          <span class="info-value" id="currentArea">4 m²</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Air Resistance:</span>
+          <span class="info-value" id="currentAirEnabled">Enabled</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Atmospheric Density:</span>
+          <span class="info-value" id="currentDensity">1.225 kg/m³</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Current Drag Force:</span>
+          <span class="info-value" id="currentDragForce">0 N</span>
         </div>
       </div>
 

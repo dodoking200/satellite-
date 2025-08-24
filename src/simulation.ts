@@ -81,6 +81,8 @@ export default class SatelliteSimulation {
       const velocityMag = parseFloat((document.getElementById("velocity") as HTMLInputElement).value);
       const directionDeg = parseFloat((document.getElementById("direction") as HTMLInputElement).value);
       const mass = parseFloat((document.getElementById("mass") as HTMLInputElement).value);
+      const dragCoeff = parseFloat((document.getElementById("dragCoeff") as HTMLInputElement).value);
+      const area = parseFloat((document.getElementById("area") as HTMLInputElement).value);
       const directionRad = directionDeg * Math.PI / 180;
       // Update physics state
       states[idx].position.set(x, y, z);
@@ -90,6 +92,8 @@ export default class SatelliteSimulation {
         0
       );
       states[idx].mass = mass;
+      states[idx].dragCoefficient = dragCoeff;
+      states[idx].area = area;
       // Update mesh position
       satellites[idx].position.copy(states[idx].position.clone().multiplyScalar(this.SCALE_FACTOR));
       // Reset trail

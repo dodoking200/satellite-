@@ -9,8 +9,8 @@ export default class CameraController {
   // Camera control state
   mode: CameraMode = "orbit";
   orbitRadius: number = 800;
-  orbitPhi: number = Math.PI / 4; // Polar angle
-  orbitTheta: number = 0; // Azimuthal angle
+  orbitPhi: number = Math.PI / 4;
+  orbitTheta: number = 0;
 
   // Satellite follow state
   followSatelliteIndex: number = 0;

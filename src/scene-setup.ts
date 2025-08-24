@@ -67,7 +67,7 @@ export default class SceneSetup {
     try {
       const loader = new GLTFLoader();
       const satData = await loader.loadAsync(
-        "../assets/models/Satellite/Satellite.gltf"
+        "/assets/models/Satellite/Satellite.gltf"
       );
       const satModel = satData.scene;
       satModel.scale.set(0.01, 0.01, 0.01);
@@ -109,13 +109,13 @@ export default class SceneSetup {
 
     // Use available textures
     const albedoTexture = textureLoader.load(
-      "../assets/models/earth/textures/earth albedo.jpg"
+      "/assets/models/earth/textures/earth albedo.jpg"
     );
     const bumpTexture = textureLoader.load(
-      "../assets/models/earth/textures/earth bump.jpg"
+      "/assets/models/earth/textures/earth bump.jpg"
     );
     const nightLightsTexture = textureLoader.load(
-      "../assets/models/earth/textures/earth night_lights_modified.png"
+      "/assets/models/earth/textures/earth night_lights_modified.png"
     );
 
     // Create Earth material (simplified)

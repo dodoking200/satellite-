@@ -156,11 +156,17 @@ export default class PhysicsEngine {
             } else if (h < 100000) { // Upper thermosphere (71-100km)
               rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
             } else if (h < 200000) { // Low Earth Orbit (100-200km)
-              rho = 0.0000001 * Math.exp(-(h - 100000) / 25000.0);
+              // Thermosphere baseline — tuned for realistic densities (~1e-10 to 1e-11 kg/m³ around 150–200 km)
+              rho = 1e-9 * Math.exp(-(h - 100000) / 25000.0);
             } else if (h < 500000) { // Medium Earth Orbit (200-500km)
-              rho = 0.00000001 * Math.exp(-(h - 200000) / 100000.0);
-            } else { // High Earth Orbit (500km+)
-              rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
+              // 200–500 km: densities ~1e-12 to 1e-13 kg/m³
+              rho = 1e-11 * Math.exp(-(h - 200000) / 100000.0);
+            } else if (h < 1000000) { // High Earth Orbit (500-1000km)
+              // Above 500 km but below 1000 km: extremely thin, ~1e-14 kg/m³
+              rho = 1e-13 * Math.exp(-(h - 500000) / 500000.0);
+            } else {
+              // Beyond 1000 km — essentially no atmosphere
+              rho = 0;
             }
             
             const v = sat.velocity.length();
@@ -232,11 +238,17 @@ export default class PhysicsEngine {
             } else if (h < 100000) { // Upper thermosphere (71-100km)
               rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
             } else if (h < 200000) { // Low Earth Orbit (100-200km)
-              rho = 0.0000001 * Math.exp(-(h - 100000) / 25000.0);
+              // Thermosphere baseline — tuned for realistic densities (~1e-10 to 1e-11 kg/m³ around 150–200 km)
+              rho = 1e-9 * Math.exp(-(h - 100000) / 25000.0);
             } else if (h < 500000) { // Medium Earth Orbit (200-500km)
-              rho = 0.00000001 * Math.exp(-(h - 200000) / 100000.0);
-            } else { // High Earth Orbit (500km+)
-              rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
+              // 200–500 km: densities ~1e-12 to 1e-13 kg/m³
+              rho = 1e-11 * Math.exp(-(h - 200000) / 100000.0);
+            } else if (h < 1000000) { // High Earth Orbit (500-1000km)
+              // Above 500 km but below 1000 km: extremely thin, ~1e-14 kg/m³
+              rho = 1e-13 * Math.exp(-(h - 500000) / 500000.0);
+            } else {
+              // Beyond 1000 km — essentially no atmosphere
+              rho = 0;
             }
             
             const v = velocityHalf.length();

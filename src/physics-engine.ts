@@ -135,43 +135,48 @@ export default class PhysicsEngine {
         if (sat.airEnabled) {
           const h = Math.max(0, distance - this.simulation.EARTH_RADIUS);
           
-          // Enhanced atmospheric density model
-          let rho;
-          if (h < 11000) { // Troposphere (0-11km)
-            rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
-          } else if (h < 20000) { // Lower stratosphere (11-20km)
-            rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
-          } else if (h < 32000) { // Upper stratosphere (20-32km)
-            rho = 0.0880 * Math.exp(-(h - 20000) / 7360.0);
-          } else if (h < 47000) { // Lower mesosphere (32-47km)
-            rho = 0.0132 * Math.exp(-(h - 32000) / 8000.0);
-          } else if (h < 51000) { // Upper mesosphere (47-51km)
-            rho = 0.00143 * Math.exp(-(h - 47000) / 7500.0);
-          } else if (h < 71000) { // Lower thermosphere (51-71km)
-            rho = 0.000086 * Math.exp(-(h - 51000) / 10000.0);
-          } else if (h < 100000) { // Upper thermosphere (71-100km)
-            rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
-          } else if (h < 200000) { // Low Earth Orbit (100-200km)
-            rho = 0.0000001 * Math.exp(-(h - 100000) / 25000.0);
-          } else if (h < 500000) { // Medium Earth Orbit (200-500km)
-            rho = 0.00000001 * Math.exp(-(h - 200000) / 100000.0);
-          } else { // High Earth Orbit (500km+)
-            rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
-          }
-          
-          const v = sat.velocity.length();
-          if (v > 1) { // Only apply drag if velocity is significant
-            const Cd = sat.dragCoefficient ?? 2.2;
-            const A = sat.area ?? 4;
-            const dragMagnitude = 0.5 * rho * v * v * Cd * A;
-            
-            // Debug drag force at orbital altitudes
-            if (h > 100000 && h < 500000) { // LEO altitudes
-              console.log(`Drag at ${(h/1000).toFixed(1)}km: ρ=${rho.toExponential(3)} kg/m³, v=${v.toFixed(0)} m/s, F=${(dragMagnitude/1000).toFixed(2)} kN`);
+          // Skip drag force calculation for very high altitudes (>= 1000 km)
+          if (h >= 1000000) {
+            // No atmospheric drag at very high altitudes
+          } else {
+            // Enhanced atmospheric density model
+            let rho;
+            if (h < 11000) { // Troposphere (0-11km)
+              rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
+            } else if (h < 20000) { // Lower stratosphere (11-20km)
+              rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
+            } else if (h < 32000) { // Upper stratosphere (20-32km)
+              rho = 0.0880 * Math.exp(-(h - 20000) / 7360.0);
+            } else if (h < 47000) { // Lower mesosphere (32-47km)
+              rho = 0.0132 * Math.exp(-(h - 32000) / 8000.0);
+            } else if (h < 51000) { // Upper mesosphere (47-51km)
+              rho = 0.00143 * Math.exp(-(h - 47000) / 7500.0);
+            } else if (h < 71000) { // Lower thermosphere (51-71km)
+              rho = 0.000086 * Math.exp(-(h - 51000) / 10000.0);
+            } else if (h < 100000) { // Upper thermosphere (71-100km)
+              rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
+            } else if (h < 200000) { // Low Earth Orbit (100-200km)
+              rho = 0.0000001 * Math.exp(-(h - 100000) / 25000.0);
+            } else if (h < 500000) { // Medium Earth Orbit (200-500km)
+              rho = 0.00000001 * Math.exp(-(h - 200000) / 100000.0);
+            } else { // High Earth Orbit (500km+)
+              rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
             }
             
-            const vhat = sat.velocity.clone().normalize();
-            dragForce = vhat.multiplyScalar(-dragMagnitude);
+            const v = sat.velocity.length();
+            if (v > 1) { // Only apply drag if velocity is significant
+              const Cd = sat.dragCoefficient ?? 2.2;
+              const A = sat.area ?? 4;
+              const dragMagnitude = 0.5 * rho * v * v * Cd * A;
+              
+              // Debug drag force at orbital altitudes
+              if (h > 100000 && h < 500000) { // LEO altitudes
+                console.log(`Drag at ${(h/1000).toFixed(1)}km: ρ=${rho.toExponential(3)} kg/m³, v=${v.toFixed(0)} m/s, F=${(dragMagnitude/1000).toFixed(2)} kN`);
+              }
+              
+              const vhat = sat.velocity.clone().normalize();
+              dragForce = vhat.multiplyScalar(-dragMagnitude);
+            }
           }
         }
 
@@ -206,37 +211,42 @@ export default class PhysicsEngine {
         if (sat.airEnabled) {
           const h = Math.max(0, newDistance - this.simulation.EARTH_RADIUS);
           
-          // Use the same enhanced atmospheric density model
-          let rho;
-          if (h < 11000) { // Troposphere (0-11km)
-            rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
-          } else if (h < 20000) { // Lower stratosphere (11-20km)
-            rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
-          } else if (h < 32000) { // Upper stratosphere (20-32km)
-            rho = 0.0880 * Math.exp(-(h - 20000) / 7360.0);
-          } else if (h < 47000) { // Lower mesosphere (32-47km)
-            rho = 0.0132 * Math.exp(-(h - 32000) / 8000.0);
-          } else if (h < 51000) { // Upper mesosphere (47-51km)
-            rho = 0.00143 * Math.exp(-(h - 47000) / 7500.0);
-          } else if (h < 71000) { // Lower thermosphere (51-71km)
-            rho = 0.000086 * Math.exp(-(h - 51000) / 10000.0);
-          } else if (h < 100000) { // Upper thermosphere (71-100km)
-            rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
-          } else if (h < 200000) { // Low Earth Orbit (100-200km)
-            rho = 0.0000001 * Math.exp(-(h - 100000) / 25000.0);
-          } else if (h < 500000) { // Medium Earth Orbit (200-500km)
-            rho = 0.00000001 * Math.exp(-(h - 200000) / 100000.0);
-          } else { // High Earth Orbit (500km+)
-            rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
-          }
-          
-          const v = velocityHalf.length();
-          if (v > 1) { // Only apply drag if velocity is significant
-            const Cd = sat.dragCoefficient ?? 2.2;
-            const A = sat.area ?? 4;
-            const dragMagnitude = 0.5 * rho * v * v * Cd * A;
-            const vhat = velocityHalf.clone().normalize();
-            newDragForce = vhat.multiplyScalar(-dragMagnitude);
+          // Skip drag force calculation for very high altitudes (>= 1000 km)
+          if (h >= 1000000) {
+            // No atmospheric drag at very high altitudes
+          } else {
+            // Use the same enhanced atmospheric density model
+            let rho;
+            if (h < 11000) { // Troposphere (0-11km)
+              rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
+            } else if (h < 20000) { // Lower stratosphere (11-20km)
+              rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
+            } else if (h < 32000) { // Upper stratosphere (20-32km)
+              rho = 0.0880 * Math.exp(-(h - 20000) / 7360.0);
+            } else if (h < 47000) { // Lower mesosphere (32-47km)
+              rho = 0.0132 * Math.exp(-(h - 32000) / 8000.0);
+            } else if (h < 51000) { // Upper mesosphere (47-51km)
+              rho = 0.00143 * Math.exp(-(h - 47000) / 7500.0);
+            } else if (h < 71000) { // Lower thermosphere (51-71km)
+              rho = 0.000086 * Math.exp(-(h - 51000) / 10000.0);
+            } else if (h < 100000) { // Upper thermosphere (71-100km)
+              rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
+            } else if (h < 200000) { // Low Earth Orbit (100-200km)
+              rho = 0.0000001 * Math.exp(-(h - 100000) / 25000.0);
+            } else if (h < 500000) { // Medium Earth Orbit (200-500km)
+              rho = 0.00000001 * Math.exp(-(h - 200000) / 100000.0);
+            } else { // High Earth Orbit (500km+)
+              rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
+            }
+            
+            const v = velocityHalf.length();
+            if (v > 1) { // Only apply drag if velocity is significant
+              const Cd = sat.dragCoefficient ?? 2.2;
+              const A = sat.area ?? 4;
+              const dragMagnitude = 0.5 * rho * v * v * Cd * A;
+              const vhat = velocityHalf.clone().normalize();
+              newDragForce = vhat.multiplyScalar(-dragMagnitude);
+            }
           }
         }
         

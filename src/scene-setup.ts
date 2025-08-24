@@ -262,7 +262,10 @@ export default class SceneSetup {
         const h = Math.max(0, altitude * 1000); // Convert back to meters
         let rho = 0;
         
-        if (h < 11000) { // Troposphere (0-11km)
+        // Set density to 0 for very high altitudes (>= 1000 km)
+        if (h >= 1000000) {
+          rho = 0;
+        } else if (h < 11000) { // Troposphere (0-11km)
           rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
         } else if (h < 20000) { // Lower stratosphere (11-20km)
           rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
@@ -293,7 +296,10 @@ export default class SceneSetup {
         const h = Math.max(0, altitude * 1000);
         let rho = 0;
         
-        if (h < 11000) {
+        // Set density to 0 for very high altitudes (>= 1000 km)
+        if (h >= 1000000) {
+          rho = 0;
+        } else if (h < 11000) {
           rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
         } else if (h < 20000) {
           rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
@@ -315,14 +321,19 @@ export default class SceneSetup {
           rho = 0.000000001 * Math.exp(-(h - 500000) / 500000.0);
         }
         
-        const Cd = sat.dragCoefficient ?? 2.2;
-        const A = sat.area ?? 4;
-        const dragMagnitude = 0.5 * rho * speed * speed * Cd * A;
-        
-        if (dragMagnitude > 0.001) { // Only show if drag is significant
-          dragForceElement.textContent = `${(dragMagnitude/1000).toFixed(3)} kN`;
+        // Force drag force to 0 if density is 0 (very high altitudes)
+        if (rho === 0) {
+          dragForceElement.textContent = "0 N";
         } else {
-          dragForceElement.textContent = `${(dragMagnitude).toExponential(2)} N`;
+          const Cd = sat.dragCoefficient ?? 2.2;
+          const A = sat.area ?? 4;
+          const dragMagnitude = 0.5 * rho * speed * speed * Cd * A;
+          
+          if (dragMagnitude > 0.001) { // Only show if drag is significant
+            dragForceElement.textContent = `${(dragMagnitude/1000).toFixed(3)} N`;
+          } else {
+            dragForceElement.textContent = `${(dragMagnitude).toExponential(2)} N`;
+          }
         }
       } else if (dragForceElement) {
         dragForceElement.textContent = "0 N";

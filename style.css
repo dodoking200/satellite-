@@ -287,3 +287,109 @@ input[type="number"] {
  outline: none;
 
 }
+
+/* Time Scale Slider Styling */
+.time-scale-group {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: rgba(96, 165, 250, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+}
+
+.time-scale-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #60a5fa;
+  font-weight: 600;
+  text-align: center;
+}
+
+.time-scale-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.time-scale-slider-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+#timeScaleSlider {
+  flex: 1;
+  height: 6px;
+  background: linear-gradient(90deg, #1e3a8a, #3b82f6, #60a5fa);
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+#timeScaleSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  cursor: pointer;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(96, 165, 250, 0.4);
+}
+
+#timeScaleSlider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(96, 165, 250, 0.6);
+}
+
+#timeScaleValue {
+  width: 60px;
+  background: rgba(96, 165, 250, 0.2);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  border-radius: 5px;
+  padding: 4px 8px;
+  color: #60a5fa;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.time-scale-presets {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.preset-btn {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: white;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  min-width: 35px;
+}
+
+.preset-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #2563eb, #60a5fa);
+}
+
+.preset-btn.active {
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+}
+
+.preset-btn.ultra {
+  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+}
+
+.preset-btn.ultra:hover {
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+}

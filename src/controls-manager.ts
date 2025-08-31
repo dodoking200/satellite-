@@ -150,7 +150,32 @@ export default class ControlsManager {
       "simSpeed"
     ) as HTMLInputElement;
     if (simSpeedInput) {
-      this.simulation.timeScale = parseFloat(simSpeedInput.value);
+      const newTimeScale = parseFloat(simSpeedInput.value);
+      console.log(`Time scale changed from ${this.simulation.timeScale} to ${newTimeScale}`);
+      this.simulation.timeScale = newTimeScale;
+      
+      // Update all time scale displays
+      this.updateTimeScaleDisplay();
     }
+  }
+
+  updateTimeScaleDisplay() {
+    const display = document.querySelector('.time-scale-display');
+    if (display) {
+      display.textContent = `${this.simulation.timeScale}x`;
+    }
+    const currentTimeScaleEl = document.getElementById('currentTimeScale');
+    if (currentTimeScaleEl) {
+      currentTimeScaleEl.textContent = `${this.simulation.timeScale}x`;
+    }
+    
+    // Update active preset button
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    presetBtns.forEach(btn => {
+      btn.classList.remove('active');
+      if (parseInt(btn.getAttribute('data-speed') || '0') === this.simulation.timeScale) {
+        btn.classList.add('active');
+      }
+    });
   }
 }

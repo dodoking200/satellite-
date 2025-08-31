@@ -163,9 +163,69 @@ window.addEventListener("DOMContentLoaded", () => {
     updateCurrentSatelliteDragProperties();
   });
 
-  // Initial UI update after satellites are created
+  // --- Time Scale Preset Buttons ---
+  function updateTimeScaleDisplay() {
+    const sim = window.simulation;
+    const display = document.querySelector('.time-scale-display');
+    if (display) {
+      display.textContent = `${sim.timeScale}x`;
+    }
+    const currentTimeScaleEl = document.getElementById('currentTimeScale');
+    if (currentTimeScaleEl) {
+      currentTimeScaleEl.textContent = `${sim.timeScale.toFixed(1)}x`;
+    }
+    
+    // Update active preset button
+    const presetBtns = document.querySelectorAll('.preset-btn');
+    presetBtns.forEach(btn => {
+      btn.classList.remove('active');
+      if (parseInt(btn.getAttribute('data-speed') || '0') === Math.round(sim.timeScale)) {
+        btn.classList.add('active');
+      }
+    });
+  }
+
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const speed = parseInt(btn.getAttribute('data-speed') || '1');
+      const simSpeedSlider = document.getElementById('simSpeed') as HTMLInputElement;
+      const simSpeedVal = document.getElementById('simSpeedVal') as HTMLInputElement;
+      
+      if (simSpeedSlider && simSpeedVal) {
+        simSpeedSlider.value = speed.toString();
+        simSpeedVal.value = speed.toString();
+        window.simulation.timeScale = speed;
+        
+        // Trigger controls manager update to ensure everything syncs
+        window.simulation.controlsManager.updateTimeScaleDisplay();
+        updateTimeScaleDisplay();
+        
+        console.log(`Time scale set to ${speed}x via preset button`);
+      }
+    });
+  });
+
+  // Override the controls manager slider events to ensure proper sync
+  document.getElementById('simSpeed')?.addEventListener('input', (e) => {
+    const value = parseFloat((e.target as HTMLInputElement).value);
+    window.simulation.timeScale = value;
+    (document.getElementById('simSpeedVal') as HTMLInputElement).value = value.toString();
+    updateTimeScaleDisplay();
+    console.log(`Time scale set to ${value}x via slider`);
+  });
+  
+  document.getElementById('simSpeedVal')?.addEventListener('input', (e) => {
+    const value = parseFloat((e.target as HTMLInputElement).value);
+    window.simulation.timeScale = value;
+    (document.getElementById('simSpeed') as HTMLInputElement).value = value.toString();
+    updateTimeScaleDisplay();
+    console.log(`Time scale set to ${value}x via input field`);
+  });
+
+  // Initial UI update after satellites are created (wait a bit for async satellite creation)
   setTimeout(() => {
     updateSatelliteUI();
     updateDragControlsFromCurrentSatellite();
-  }, 500);
+    updateTimeScaleDisplay(); // Initialize time scale display
+  }, 1000); // Increased timeout for async satellite loading
 });

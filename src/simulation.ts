@@ -25,6 +25,7 @@ export default class SatelliteSimulation {
   // Simulation state
   isRunning: boolean = true;
   timeScale: number = 1;
+  private lastTime: number = 0;
 
   constructor() {
     this.sceneSetup = new SceneSetup(this);
@@ -37,22 +38,61 @@ export default class SatelliteSimulation {
     this.controlsManager = new ControlsManager(this);
 
     this.physicsEngine.reset();
+    
+    // Add a default satellite for immediate testing
+    this.addInitialSatellite();
+    
     this.sceneSetup.updateInfo();
-
     this.animate();
   }
 
-  animate() {
-    requestAnimationFrame(() => this.animate());
+  private async addInitialSatellite() {
+    // Add default satellite at 400km altitude with orbital velocity
+    const height = 400000; // 400km
+    const position = new THREE.Vector3(this.EARTH_RADIUS + height, 0, 0);
+    const velocity = new THREE.Vector3(0, 7800, 0); // ~orbital velocity
+    
+    await this.sceneSetup.addSatellite({
+      position,
+      velocity,
+      mass: 1000,
+      dragCoefficient: 2.2,
+      area: 4
+    });
+  }
+
+  animate(currentTime: number = 0) {
+    requestAnimationFrame((time) => this.animate(time));
+
+    // Calculate actual frame time in seconds
+    if (this.lastTime === 0) this.lastTime = currentTime;
+    const realDeltaTime = (currentTime - this.lastTime) / 1000; // Convert ms to seconds
+    this.lastTime = currentTime;
+
+    // Use a more reasonable base deltaTime for physics calculations
+    // This ensures smooth animation regardless of actual framerate
+    let physicsStep = Math.min(realDeltaTime, 1/60); // Cap at ~60 FPS for stability
+    
+    // For very high time scales, allow larger physics steps for performance
+    if (this.timeScale > 1000) {
+      // Ultra-high speeds (1000x+): Allow even larger steps
+      physicsStep = Math.min(realDeltaTime, 1/10); // Allow up to ~10 FPS equivalent for 1000x+
+    } else if (this.timeScale > 100) {
+      // High speeds (100x-1000x): Allow larger steps
+      physicsStep = Math.min(realDeltaTime, 1/30); // Allow up to ~30 FPS equivalent for 100x+
+    }
+    
+    // Ensure minimum step size for responsiveness, but allow smaller for ultra-high speeds
+    physicsStep = Math.max(physicsStep, 1/240); // Minimum ~240 FPS equivalent
 
     if (this.isRunning) {
-      this.physicsEngine.updatePhysics(1);
+      this.physicsEngine.updatePhysics(physicsStep);
     }
 
     this.cameraController.updateCameraPosition();
 
-    // Rotate Earth
-    this.sceneSetup.earth.rotation.y += 0.001;
+    // Rotate Earth (scaled by actual frame time for consistent rotation)
+    this.sceneSetup.earth.rotation.y += 0.001 * (realDeltaTime * 60); // Normalize to 60 FPS
 
     // Update sun position for day/night cycle
     const time = Date.now() * 0.0001;

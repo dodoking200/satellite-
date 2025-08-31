@@ -256,82 +256,19 @@ export default class SceneSetup {
         airEnabledElement.textContent = sat.airEnabled ? "Enabled" : "Disabled";
       }
 
-      // Calculate and display current atmospheric density
+      // Calculate and display current atmospheric density using physics engine
       const densityElement = document.getElementById("currentDensity");
       if (densityElement) {
         const h = Math.max(0, altitude * 1000); // Convert back to meters
-        let rho = 0;
-        
-        // Set density to 0 for very high altitudes (>= 1000 km)
-        if (h >= 1000000) {
-          rho = 0;
-        } else if (h < 11000) { // Troposphere (0-11km)
-          rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
-        } else if (h < 20000) { // Lower stratosphere (11-20km)
-          rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
-        } else if (h < 32000) { // Upper stratosphere (20-32km)
-          rho = 0.0880 * Math.exp(-(h - 20000) / 7360.0);
-        } else if (h < 47000) { // Lower mesosphere (32-47km)
-          rho = 0.0132 * Math.exp(-(h - 32000) / 8000.0);
-        } else if (h < 51000) { // Upper mesosphere (47-51km)
-          rho = 0.00143 * Math.exp(-(h - 47000) / 7500.0);
-        } else if (h < 71000) { // Lower thermosphere (51-71km)
-          rho = 0.000086 * Math.exp(-(h - 51000) / 10000.0);
-        } else if (h < 100000) { // Upper thermosphere (71-100km)
-          rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
-        } else if (h < 200000) { // Low Earth Orbit (100-200km)
-          // Thermosphere baseline — tuned for realistic densities (~1e-10 to 1e-11 kg/m³ around 150–200 km)
-          rho = 1e-9 * Math.exp(-(h - 100000) / 25000.0);
-        } else if (h < 500000) { // Medium Earth Orbit (200-500km)
-          // 200–500 km: densities ~1e-12 to 1e-13 kg/m³
-          rho = 1e-11 * Math.exp(-(h - 200000) / 100000.0);
-        } else if (h < 1000000) { // High Earth Orbit (500-1000km)
-          // Above 500 km but below 1000 km: extremely thin, ~1e-14 kg/m³
-          rho = 1e-13 * Math.exp(-(h - 500000) / 500000.0);
-        } else {
-          // Beyond 1000 km — essentially no atmosphere
-          rho = 0;
-        }
-        
+        const rho = this.simulation.physicsEngine.calculateAtmosphericDensity(h);
         densityElement.textContent = `${rho.toExponential(3)} kg/m³`;
       }
 
-      // Calculate and display current drag force
+      // Calculate and display current drag force using physics engine
       const dragForceElement = document.getElementById("currentDragForce");
       if (dragForceElement && sat.airEnabled) {
         const h = Math.max(0, altitude * 1000);
-        let rho = 0;
-        
-        // Set density to 0 for very high altitudes (>= 1000 km)
-        if (h >= 1000000) {
-          rho = 0;
-        } else if (h < 11000) {
-          rho = 1.225 * Math.pow(1 - 0.0065 * h / 288.15, 4.256);
-        } else if (h < 20000) {
-          rho = 0.3639 * Math.exp(-(h - 11000) / 6341.6);
-        } else if (h < 32000) {
-          rho = 0.0880 * Math.exp(-(h - 20000) / 7360.0);
-        } else if (h < 47000) {
-          rho = 0.0132 * Math.exp(-(h - 32000) / 8000.0);
-        } else if (h < 51000) {
-          rho = 0.00143 * Math.exp(-(h - 47000) / 7500.0);
-        } else if (h < 71000) {
-          rho = 0.000086 * Math.exp(-(h - 51000) / 10000.0);
-        } else if (h < 100000) {
-          rho = 0.0000032 * Math.exp(-(h - 71000) / 15000.0);
-        } else if (h < 200000) {
-          // Thermosphere baseline — tuned for realistic densities (~1e-10 to 1e-11 kg/m³ around 150–200 km)
-          rho = 1e-9 * Math.exp(-(h - 100000) / 25000.0);
-        } else if (h < 500000) {
-          // 200–500 km: densities ~1e-12 to 1e-13 kg/m³
-          rho = 1e-11 * Math.exp(-(h - 200000) / 100000.0);
-        } else if (h < 1000000) {
-          // Above 500 km but below 1000 km: extremely thin, ~1e-14 kg/m³
-          rho = 1e-13 * Math.exp(-(h - 500000) / 500000.0);
-        } else {
-          // Beyond 1000 km — essentially no atmosphere
-          rho = 0;
-        }
+        const rho = this.simulation.physicsEngine.calculateAtmosphericDensity(h);
         
         // Force drag force to 0 if density is 0 (very high altitudes)
         if (rho === 0) {
@@ -350,6 +287,12 @@ export default class SceneSetup {
       } else if (dragForceElement) {
         dragForceElement.textContent = "0 N";
       }
+    }
+    
+    // Update time scale display
+    const timeScaleElement = document.getElementById("currentTimeScale");
+    if (timeScaleElement) {
+      timeScaleElement.textContent = `${this.simulation.timeScale.toFixed(1)}x`;
     }
   }
 }

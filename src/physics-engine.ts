@@ -137,194 +137,164 @@ export default class PhysicsEngine {
   }
 
   updatePhysics(deltaTime: number) {
-    for (let i = 0; i < this.satellites.length; i++) {
-      const sat = this.satellites[i];
-      // Per-satellite scaled dt
-      let dt = deltaTime * this.simulation.timeScale * (sat.timeScale ?? 1);
-
-      // Safety check: Allow ultra-high speeds up to 10,000x
-      const maxSafeTimeScale = 10000; // Ultra-high speed support up to 10,000x
-      const maxSatelliteTimeScale = 1000; // Individual satellites up to 1,000x
-
-      if (this.simulation.timeScale > maxSafeTimeScale) {
-        console.warn(
-          `Time scale ${this.simulation.timeScale} is too high for stable orbital mechanics. Limiting to ${maxSafeTimeScale}.`
-        );
-        dt = deltaTime * maxSafeTimeScale * (sat.timeScale ?? 1);
+    // Simple, fast physics like the original - just for the first satellite
+    if (this.satellites.length === 0) return;
+    
+    const sat = this.satellites[0]; // Focus on first satellite for performance
+    
+    // Direct time scale application like the original
+    const dt = deltaTime * this.simulation.timeScale;
+    
+    // Skip complex substep calculations for speed
+    const distance = sat.position.length();
+    
+    // Simple crash check
+    if (distance <= this.simulation.EARTH_RADIUS + 50000) { // 50km crash threshold
+      const statusElement = document.getElementById("status");
+      if (statusElement) {
+        statusElement.textContent = "Crashed!";
       }
-
-      if ((sat.timeScale ?? 1) > maxSatelliteTimeScale) {
-        console.warn(
-          `Satellite time scale ${sat.timeScale} is too high. Limiting to ${maxSatelliteTimeScale}.`
-        );
-        dt = deltaTime * this.simulation.timeScale * maxSatelliteTimeScale;
-      }
-
-      // Ensure associated arrays exist to avoid runtime errors
-      if (!this.simulation.sceneSetup.trails[i])
-        this.simulation.sceneSetup.trails[i] = [];
-
-      // Auto-disable air resistance for escape scenarios (very high velocities)
-      const velocityMagnitude = sat.velocity.length();
-      const escapeVelocity = Math.sqrt(
-        (2 * this.simulation.G * this.simulation.EARTH_MASS) /
-          sat.position.length()
-      );
-      if (velocityMagnitude > escapeVelocity * 0.95) {
-        // Near escape velocity - disable air resistance to prevent unrealistic effects
-        sat.airEnabled = false;
-      }
-
-      // Auto-disable air resistance for very low altitudes (crash scenarios)
-      const altitude = sat.position.length() - this.simulation.EARTH_RADIUS;
-      if (altitude < 100000) {
-        // Below 100km
-        sat.airEnabled = false;
-      }
-
-      // Adaptive integration: Scale step size and substeps based on time scale
-      let maxStep, maxSubsteps;
-
-      if (this.simulation.timeScale <= 10) {
-        // Normal speed: Small steps for maximum accuracy
-        maxStep = 0.1;
-        maxSubsteps = Math.min(10, Math.ceil(dt / 0.1));
-      } else if (this.simulation.timeScale <= 50) {
-        // Medium speed: Balanced steps
-        maxStep = 0.2;
-        maxSubsteps = Math.min(8, Math.ceil(dt / 0.2));
-      } else if (this.simulation.timeScale <= 200) {
-        // High speed: Larger steps with fewer substeps
-        maxStep = 0.5;
-        maxSubsteps = Math.min(5, Math.ceil(dt / 0.5));
-      } else {
-        // Ultra high speed: Very large steps, minimal substeps
-        maxStep = 1.0;
-        maxSubsteps = Math.min(3, Math.ceil(dt / 1.0));
-      }
-
-      let substepCount = 0;
-      let remainingDt = dt;
-
-      while (remainingDt > 0.001 && substepCount < maxSubsteps) {
-        const step = Math.min(maxStep, remainingDt);
-        remainingDt -= step;
-        substepCount++;
-
-        // Calculate distance from Earth center
-        const distance = sat.position.length();
-        const altitude = distance - this.simulation.EARTH_RADIUS;
-
-        // Check if satellite crashed into Earth
-        const crashThreshold = 80000; // 80km above surface
-        if (altitude <= crashThreshold) {
-          console.log(
-            `Satellite ${i + 1} altitude ${(altitude / 1000).toFixed(
-              1
-            )}km <= crash threshold ${(crashThreshold / 1000).toFixed(
-              1
-            )}km - CRASHING!`
-          );
-          const statusElement = document.getElementById("status");
-          if (statusElement) {
-            statusElement.textContent = `Satellite ${i + 1}: Crashed!`;
-          }
-          break; // Exit the substep loop for this satellite
-        }
-
-        // Calculate gravitational force
-        const gravityMagnitude =
-          (this.simulation.G * this.simulation.EARTH_MASS * sat.mass) /
-          (distance * distance);
-        const gravityDirection = sat.position
-          .clone()
-          .normalize()
-          .multiplyScalar(-1);
-        const gravityForce = gravityDirection.multiplyScalar(gravityMagnitude);
-
-        // Atmospheric drag calculation
-        let dragForce = new THREE.Vector3(0, 0, 0);
-        if (sat.airEnabled) {
-          const h = Math.max(0, distance - this.simulation.EARTH_RADIUS);
-          const rho = this.calculateAtmosphericDensity(h);
-
-          const v = sat.velocity.length();
-          if (v > 1 && rho > 0) {
-            // Only apply drag if velocity is significant and atmosphere exists
-            const Cd = sat.dragCoefficient ?? 2.2;
-            const A = sat.area ?? 4;
-            const dragMagnitude = 0.5 * rho * v * v * Cd * A;
-
-            // Remove debug logging for performance
-
-            const vhat = sat.velocity.clone().normalize();
-            dragForce = vhat.multiplyScalar(-dragMagnitude);
-          }
-        }
-
-        // Semi-implicit Euler integration (Symplectic Euler)
-        // This method is perfect for orbital mechanics - faster and more stable than Verlet
-
-        // Step 1: Calculate acceleration from current position
-        const totalForce = gravityForce.add(dragForce);
-        const acceleration = totalForce.divideScalar(sat.mass);
-
-        // Step 2: Update velocity first (using current acceleration)
-        sat.velocity.add(acceleration.clone().multiplyScalar(step));
-
-        // Step 3: Update position using NEW velocity (this is the "semi-implicit" part)
-        sat.position.add(sat.velocity.clone().multiplyScalar(step));
-
-        // Add to trail
-        if (
-          this.simulation.sceneSetup.trails[i].length === 0 ||
-          sat.position.distanceTo(
-            this.simulation.sceneSetup.trails[i][
-              this.simulation.sceneSetup.trails[i].length - 1
-            ]
-          ) > 1000
-        ) {
-          this.simulation.sceneSetup.trails[i].push(sat.position.clone());
-          if (
-            this.simulation.sceneSetup.trails[i].length >
-            this.simulation.sceneSetup.maxTrailLength
-          ) {
-            this.simulation.sceneSetup.trails[i].shift();
-          }
-        }
-
-        // Update satellite visual position
-        this.simulation.sceneSetup.satellites[i].position.copy(
-          sat.position.clone().multiplyScalar(this.simulation.SCALE_FACTOR)
-        );
-
-        // Position tracking removed for performance
-
-        // Update status (for first satellite only)
-        if (i === 0) {
-          const currentDistance = sat.position.length();
-          const escapeVelocity = Math.sqrt(
-            (2 * this.simulation.G * this.simulation.EARTH_MASS) /
-              currentDistance
-          );
-          const currentSpeed = sat.velocity.length();
-          const statusElement = document.getElementById("status");
-          if (statusElement) {
-            if (currentSpeed > escapeVelocity) {
-              statusElement.textContent = "Escaping!";
-            } else {
-              statusElement.textContent = "Orbiting";
-            }
-          }
-        }
+      return;
+    }
+    
+    // Calculate gravitational force (simplified)
+    const forceMagnitude = (this.simulation.G * this.simulation.EARTH_MASS * sat.mass) / (distance * distance);
+    const forceDirection = sat.position.clone().normalize().multiplyScalar(-1);
+    const gravityForce = forceDirection.multiplyScalar(forceMagnitude);
+    
+    // Simple atmospheric drag force
+    let dragForce = new THREE.Vector3(0, 0, 0);
+    const altitude = distance - this.simulation.EARTH_RADIUS;
+    
+    if (altitude < 500000 && sat.velocity.length() > 1) { // Below 500km and moving
+      // Simple exponential atmosphere model - much faster than complex calculations
+      const atmosphereDensity = 1.225 * Math.exp(-altitude / 8500); // kg/m³
+      
+      const velocity = sat.velocity.length();
+      const dragCoeff = sat.dragCoefficient ?? 2.2;
+      const area = sat.area ?? 4;
+      
+      // Drag force magnitude: F = 0.5 * ρ * v² * Cd * A
+      const dragMagnitude = 0.5 * atmosphereDensity * velocity * velocity * dragCoeff * area;
+      
+      // Drag direction opposite to velocity
+      const velocityDirection = sat.velocity.clone().normalize();
+      dragForce = velocityDirection.multiplyScalar(-dragMagnitude);
+    }
+    
+    // Combine forces
+    const totalForce = gravityForce.add(dragForce);
+    
+    // Calculate acceleration (F = ma, so a = F/m)
+    const acceleration = totalForce.divideScalar(sat.mass);
+    
+    // Simple Euler integration - fast like original
+    sat.velocity.add(acceleration.multiplyScalar(dt));
+    sat.position.add(sat.velocity.clone().multiplyScalar(dt));
+    
+    // Update trail (simplified)
+    if (!this.simulation.sceneSetup.trails[0]) {
+      this.simulation.sceneSetup.trails[0] = [];
+    }
+    
+    const trail = this.simulation.sceneSetup.trails[0];
+    if (trail.length === 0 || sat.position.distanceTo(trail[trail.length - 1]) > 1000) {
+      trail.push(sat.position.clone());
+      if (trail.length > this.simulation.sceneSetup.maxTrailLength) {
+        trail.shift();
       }
     }
-
+    
+    // Update satellite visual position
+    if (this.simulation.sceneSetup.satellites[0]) {
+      this.simulation.sceneSetup.satellites[0].position.copy(
+        sat.position.clone().multiplyScalar(this.simulation.SCALE_FACTOR)
+      );
+    }
+    
+    // Update status
+    const escapeVelocity = Math.sqrt((2 * this.simulation.G * this.simulation.EARTH_MASS) / distance);
+    const currentSpeed = sat.velocity.length();
+    const statusElement = document.getElementById("status");
+    if (statusElement) {
+      if (currentSpeed > escapeVelocity) {
+        statusElement.textContent = "Escaping!";
+      } else {
+        statusElement.textContent = "Orbiting";
+      }
+    }
+    
+    // Update trails and info
     this.simulation.sceneSetup.updateTrails();
     this.updateInfo();
   }
 
   updateInfo() {
-    this.simulation.sceneSetup.updateInfo();
+    if (this.satellites.length === 0) return;
+    
+    const sat = this.satellites[0];
+    const distance = sat.position.length();
+    const altitude = (distance - this.simulation.EARTH_RADIUS) / 1000; // km
+    const speed = sat.velocity.length(); // m/s
+    const distanceFromEarth = distance / 1000; // km
+
+    // Update basic info
+    const altitudeElement = document.getElementById("currentAltitude");
+    if (altitudeElement) {
+      altitudeElement.textContent = `${altitude.toFixed(1)} km`;
+    }
+
+    const speedElement = document.getElementById("currentSpeed");
+    if (speedElement) {
+      speedElement.textContent = `${speed.toFixed(0)} m/s`;
+    }
+
+    const distanceElement = document.getElementById("currentDistance");
+    if (distanceElement) {
+      distanceElement.textContent = `${distanceFromEarth.toFixed(1)} km`;
+    }
+    
+    // Update drag info
+    const dragCoeffElement = document.getElementById("currentDragCoeff");
+    if (dragCoeffElement) {
+      dragCoeffElement.textContent = `${sat.dragCoefficient ?? 2.2}`;
+    }
+
+    const areaElement = document.getElementById("currentArea");
+    if (areaElement) {
+      areaElement.textContent = `${sat.area ?? 4}m²`;
+    }
+
+    const airEnabledElement = document.getElementById("currentAirEnabled");
+    if (airEnabledElement) {
+      airEnabledElement.textContent = altitude * 1000 < 500000 ? "Enabled" : "Disabled";
+    }
+
+    // Calculate and show atmospheric density
+    const densityElement = document.getElementById("currentDensity");
+    if (densityElement) {
+      const atmosphereDensity = altitude * 1000 < 500000 ? 
+        1.225 * Math.exp(-(altitude * 1000) / 8500) : 0;
+      densityElement.textContent = `${atmosphereDensity.toExponential(3)}kg/m³`;
+    }
+
+    // Calculate and show drag force
+    const dragForceElement = document.getElementById("currentDragForce");
+    if (dragForceElement) {
+      if (altitude * 1000 < 500000 && speed > 1) {
+        const atmosphereDensity = 1.225 * Math.exp(-(altitude * 1000) / 8500);
+        const dragCoeff = sat.dragCoefficient ?? 2.2;
+        const area = sat.area ?? 4;
+        const dragMagnitude = 0.5 * atmosphereDensity * speed * speed * dragCoeff * area;
+        
+        if (dragMagnitude > 0.001) {
+          dragForceElement.textContent = `${(dragMagnitude/1000).toFixed(3)}kN`;
+        } else {
+          dragForceElement.textContent = `${dragMagnitude.toExponential(2)}N`;
+        }
+      } else {
+        dragForceElement.textContent = "0 N";
+      }
+    }
   }
 }

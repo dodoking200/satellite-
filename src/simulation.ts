@@ -61,38 +61,18 @@ export default class SatelliteSimulation {
     });
   }
 
-  animate(currentTime: number = 0) {
-    requestAnimationFrame((time) => this.animate(time));
-
-    // Calculate actual frame time in seconds
-    if (this.lastTime === 0) this.lastTime = currentTime;
-    const realDeltaTime = (currentTime - this.lastTime) / 1000; // Convert ms to seconds
-    this.lastTime = currentTime;
-
-    // Use a more reasonable base deltaTime for physics calculations
-    // This ensures smooth animation regardless of actual framerate
-    let physicsStep = Math.min(realDeltaTime, 1/60); // Cap at ~60 FPS for stability
-    
-    // For very high time scales, allow larger physics steps for performance
-    if (this.timeScale > 1000) {
-      // Ultra-high speeds (1000x+): Allow even larger steps
-      physicsStep = Math.min(realDeltaTime, 1/10); // Allow up to ~10 FPS equivalent for 1000x+
-    } else if (this.timeScale > 100) {
-      // High speeds (100x-1000x): Allow larger steps
-      physicsStep = Math.min(realDeltaTime, 1/30); // Allow up to ~30 FPS equivalent for 100x+
-    }
-    
-    // Ensure minimum step size for responsiveness, but allow smaller for ultra-high speeds
-    physicsStep = Math.max(physicsStep, 1/240); // Minimum ~240 FPS equivalent
+  animate() {
+    requestAnimationFrame(() => this.animate());
 
     if (this.isRunning) {
-      this.physicsEngine.updatePhysics(physicsStep);
+      // Use simple fixed timestep like the original - much faster!
+      this.physicsEngine.updatePhysics(0.016); // ~60 FPS equivalent (1/60 = 0.016)
     }
 
     this.cameraController.updateCameraPosition();
 
-    // Rotate Earth (scaled by actual frame time for consistent rotation)
-    this.sceneSetup.earth.rotation.y += 0.001 * (realDeltaTime * 60); // Normalize to 60 FPS
+    // Rotate Earth - simple like original
+    this.sceneSetup.earth.rotation.y += 0.001;
 
     // Update sun position for day/night cycle
     const time = Date.now() * 0.0001;
